@@ -16,7 +16,8 @@ let lastSpriteRect = { left: 60, top: 164, width: 160, height: 160 };
 const MIN_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 const CONNECTION_LOG_INTERVAL_MS = 30000;
-const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || 'screen-saver';
+const DEFAULT_ALWAYS_ON_TOP_LEVEL = process.platform === 'darwin' ? 'floating' : 'screen-saver';
+const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || DEFAULT_ALWAYS_ON_TOP_LEVEL;
 const WINDOW_SIZE = { width: 280, height: 340 };
 const PET_TITLE = `Hermes Pets Overlay [${process.pid}]`;
 const PET_SPECIES = process.env.HERMES_PET_SPECIES || 'cat';
@@ -98,6 +99,20 @@ function reassertOverlayOnTop(reason) {
     console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
   } catch (e) {
     console.warn(`[pet-overlay] failed to reassert always-on-top after ${reason}: ${e.message}`);
+  }
+}
+
+function makeWindowVisible(reason) {
+  if (!win) return;
+  try {
+    if (process.platform === 'darwin') {
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      win.setFullScreenable(false);
+    }
+    win.showInactive();
+    reassertOverlayOnTop(reason);
+  } catch (e) {
+    console.warn(`[pet-overlay] failed to show overlay after ${reason}: ${e.message}`);
   }
 }
 
@@ -185,6 +200,7 @@ function createWindow() {
     resizable: false,
     backgroundColor: '#00000000',
     show: false,
+    fullScreenable: process.platform !== 'darwin',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
 
@@ -203,10 +219,10 @@ function createWindow() {
 
   win.once('ready-to-show', () => {
     console.log(`[pet-overlay] final window bounds ${JSON.stringify(win.getBounds())}`);
-    win.showInactive();
-    reassertOverlayOnTop('ready-to-show');
+    makeWindowVisible('ready-to-show');
     if (clickThrough) win.setIgnoreMouseEvents(true, { forward: true });
   });
+  win.webContents.once('did-finish-load', () => setTimeout(() => makeWindowVisible('did-finish-load'), 250));
 
   let moveTimeout = null;
   win.on('move', () => {
@@ -232,7 +248,7 @@ app.on('window-all-closed', () => {
 ipcMain.on('minimize-pet', () => { if (win) win.setSize(80, 80); });
 ipcMain.on('restore-pet', () => { if (win) win.setSize(WINDOW_SIZE.width, WINDOW_SIZE.height); });
 ipcMain.on('hide-pet', () => { if (win) win.hide(); });
-ipcMain.on('show-pet', () => { if (win) { win.showInactive(); reassertOverlayOnTop('show-pet'); } });
+ipcMain.on('show-pet', () => makeWindowVisible('show-pet'));
 
 ipcMain.on('pet-drag-start', (_, point) => {
   if (!win || process.env.HERMES_PET_CLICK_THROUGH === '1') return;
