@@ -662,6 +662,16 @@ def _wsl_to_windows_path(path: Path) -> str:
 
 
 def _detached_popen_kwargs() -> dict[str, object]:
+    if _is_macos() and os.environ.get("HERMES_PET_FOREGROUND") != "1":
+        log_path = _state_dir() / "overlay-electron.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_file = log_path.open("ab")
+        return {
+            "stdin": subprocess.DEVNULL,
+            "stdout": log_file,
+            "stderr": subprocess.STDOUT,
+            "start_new_session": True,
+        }
     kwargs: dict[str, object] = {
         "stdin": subprocess.DEVNULL,
         "stdout": subprocess.DEVNULL,
@@ -833,6 +843,9 @@ def _launch_native_overlay(args: argparse.Namespace, *, platform_label: str) -> 
     env.setdefault("HERMES_PET_WS_URL", f"ws://{host}:{port}")
     env["HERMES_PET_POSITION_FILE"] = str(_overlay_position_path())
     env["HERMES_PET_MEMORY_FILE"] = str(_pet_memory_path())
+    if _is_macos():
+        env.setdefault("ELECTRON_ENABLE_LOGGING", "1")
+        env.setdefault("ELECTRON_ENABLE_STACK_DUMPING", "1")
     cmd = [str(electron), str(overlay_dir / "src" / "main.js")]
     try:
         proc = subprocess.Popen(cmd, cwd=str(overlay_dir), env=env, **_detached_popen_kwargs())

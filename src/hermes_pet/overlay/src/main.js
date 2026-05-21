@@ -106,8 +106,8 @@ function reassertOverlayOnTop(reason) {
   try {
     if (!MAC_STANDARD_WINDOW || process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL) {
       win.setAlwaysOnTop(true, ALWAYS_ON_TOP_LEVEL);
+      win.moveTop();
     }
-    win.moveTop();
     console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
   } catch (e) {
     console.warn(`[pet-overlay] failed to reassert always-on-top after ${reason}: ${e.message}`);
@@ -119,10 +119,9 @@ function makeWindowVisible(reason) {
   try {
     if (process.platform === 'darwin') {
       if (!MAC_STANDARD_WINDOW) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-      win.setFullScreenable(false);
       win.show();
       win.focus();
-      app.focus({ steal: true });
+      if (!MAC_STANDARD_WINDOW) app.focus({ steal: true });
     } else {
       win.showInactive();
     }
