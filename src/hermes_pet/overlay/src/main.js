@@ -22,6 +22,7 @@ const CONNECTION_LOG_INTERVAL_MS = 30000;
 const DEFAULT_ALWAYS_ON_TOP_LEVEL = IS_MAC ? 'floating' : 'screen-saver';
 const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || DEFAULT_ALWAYS_ON_TOP_LEVEL;
 const WINDOW_SIZE = { width: 280, height: 340 };
+const MAC_WINDOW_SIZE = { width: 280, height: 1020 };
 const PET_TITLE = `Hermes Pets Overlay [${process.pid}]`;
 const PET_SPECIES = process.env.HERMES_PET_SPECIES || 'cat';
 const DEBUG_EVENTS = process.env.HERMES_PET_DEBUG_EVENTS === '1';
@@ -285,7 +286,7 @@ function createWindow() {
   if (MAC_STANDARD_WINDOW) console.log('[pet-overlay] mac standard window enabled');
 
   win = new BrowserWindow({
-    ...WINDOW_SIZE,
+    ...(IS_MAC ? MAC_WINDOW_SIZE : WINDOW_SIZE),
     x: pos.x,
     y: pos.y,
     title: PET_TITLE,

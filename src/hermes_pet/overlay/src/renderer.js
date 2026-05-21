@@ -3925,7 +3925,7 @@ function eventReactionFor(msg) {
     return { animation: 'running', reactionMs: 700, trayMs: 0 };
   }
   if (msg.type === 'task_completed') {
-    return { animation: 'jumping', reactionMs: 900, trayMs: 5000 };
+    return { animation: 'idle', reactionMs: 900, trayMs: 5000 };
   }
   if (msg.type === 'task_failed') {
     return { animation: 'failed', reactionMs: 1100, trayMs: 9000 };
@@ -3941,7 +3941,7 @@ function eventReactionFor(msg) {
     return { animation: state, reactionMs: 700, trayMs: 0 };
   }
   if (msg.type === 'job_finished') {
-    return { animation: 'jumping', reactionMs: 900, trayMs: 5000 };
+    return { animation: 'idle', reactionMs: 900, trayMs: 5000 };
   }
   if (msg.type === 'message_received') {
     return { animation: msg.urgent ? 'waving' : 'message_react', reactionMs: 850, trayMs: msg.urgent ? 8000 : 0 };

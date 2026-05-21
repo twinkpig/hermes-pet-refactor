@@ -67,6 +67,8 @@ def test_macos_overlay_defaults_to_transparent_window() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     main = (repo_root / "src/hermes_pet/overlay/src/main.js").read_text(encoding="utf-8")
 
+    assert "const MAC_WINDOW_SIZE = { width: 280, height: 1020 };" in main
+    assert "...(IS_MAC ? MAC_WINDOW_SIZE : WINDOW_SIZE)" in main
     assert "process.env.HERMES_PET_MAC_STANDARD_WINDOW === '1'" in main
     assert "process.env.HERMES_PET_MAC_TRANSPARENT" not in main
     assert "transparent: !standardWindow" in main

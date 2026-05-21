@@ -206,6 +206,17 @@ async function main() {
   assert(smoke.isBubbleVisible(), 'restored running bubble should be visible');
   assert(smoke.getBubbleText().includes('帮紧你'), 'restored running bubble should use running copy');
 
+  smoke.handleEvent({ type: 'job_finished', text: 'Tests passed', id: 'job-1' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'idle', 'job_finished should return running animation to idle');
+
+  smoke.handleEvent({ type: 'task_started', task_title: 'Plugin task', task_id: 'plugin-1' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'running', 'task_started should animate running');
+  smoke.handleEvent({ type: 'task_completed', task_title: 'Plugin task', task_id: 'plugin-1' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'idle', 'task_completed should return running animation to idle');
+
   smoke.handleEvent({ type: 'job_failed', text: 'Tests failed', id: 'job-2', exit_code: 7 });
   await flush();
   assert(smoke.getCurrentAnimation() === 'failed', 'job_failed should animate failed');
