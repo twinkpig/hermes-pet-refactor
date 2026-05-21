@@ -100,3 +100,18 @@ def test_overlay_entrypoints_share_renderer_ipc_contract() -> None:
         invoke_handler = f"ipcMain.handle('{channel}'"
         assert handler in mac_main or invoke_handler in mac_main, f"mac main missing {channel}"
         assert handler in windows_main or invoke_handler in windows_main, f"windows main missing {channel}"
+
+
+def test_macos_overlay_uses_sprite_scoped_mouse_passthrough() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    main = (repo_root / "src/hermes_pet/overlay/src/main.js").read_text(encoding="utf-8")
+
+    assert "let mousePassthrough = null;" in main
+    assert "let mousePassthroughTimer = null;" in main
+    assert "let trayVisible = false;" in main
+    assert "function cursorHitsSprite()" in main
+    assert "function startMousePassthroughLoop()" in main
+    assert "win.setIgnoreMouseEvents(ignore, ignore ? { forward: true } : undefined)" in main
+    assert "startMousePassthroughLoop();" in main
+    assert "if (mousePassthroughTimer) clearInterval(mousePassthroughTimer);" in main
+    assert "ipcMain.on('event-tray-visibility', (_, visible) => {" in main

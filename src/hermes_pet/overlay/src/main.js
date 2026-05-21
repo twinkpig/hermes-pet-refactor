@@ -12,6 +12,9 @@ let lastConnectionLogMs = 0;
 let bridgeConnected = null;
 let dragState = null;
 let lastSpriteRect = { left: 60, top: 164, width: 160, height: 160 };
+let mousePassthrough = null;
+let mousePassthroughTimer = null;
+let trayVisible = false;
 let thinkingStageTimers = [];
 
 const IS_MAC = process.platform === 'darwin';
@@ -105,6 +108,43 @@ function persistWindowPosition() {
   if (bounds.x !== clamped.x || bounds.y !== clamped.y) win.setBounds({ ...bounds, ...clamped });
   savePosition(clamped.x, clamped.y);
   win.webContents.send('position-changed', clamped.x, clamped.y);
+}
+
+function setMousePassthrough(ignore) {
+  if (!win || win.isDestroyed() || mousePassthrough === ignore) return;
+  try {
+    win.setIgnoreMouseEvents(ignore, ignore ? { forward: true } : undefined);
+    mousePassthrough = ignore;
+  } catch (_) {}
+}
+
+function cursorHitsSprite() {
+  if (!win || win.isDestroyed()) return false;
+  const bounds = win.getBounds();
+  const rect = sanitizeSpriteRect(lastSpriteRect, bounds.width, bounds.height);
+  if (!rect) return false;
+  const point = screen.getCursorScreenPoint();
+  const localX = point.x - bounds.x;
+  const localY = point.y - bounds.y;
+  return localX >= rect.left &&
+    localX < rect.left + rect.width &&
+    localY >= rect.top &&
+    localY < rect.top + rect.height;
+}
+
+function updateMousePassthrough() {
+  if (!win || win.isDestroyed()) return;
+  if (dragState || trayVisible) {
+    setMousePassthrough(false);
+    return;
+  }
+  setMousePassthrough(!cursorHitsSprite());
+}
+
+function startMousePassthroughLoop() {
+  if (mousePassthroughTimer) clearInterval(mousePassthroughTimer);
+  mousePassthroughTimer = setInterval(updateMousePassthrough, 75);
+  updateMousePassthrough();
 }
 
 function reassertOverlayOnTop(reason) {
@@ -333,6 +373,7 @@ function createWindow() {
     console.log(`[pet-overlay] final window bounds ${JSON.stringify(win.getBounds())}`);
     makeWindowVisible('ready-to-show');
     if (clickThrough) win.setIgnoreMouseEvents(true, { forward: true });
+    else if (IS_MAC && !standardWindow) startMousePassthroughLoop();
   });
   win.webContents.once('did-finish-load', () => setTimeout(() => makeWindowVisible('did-finish-load'), 250));
 
@@ -345,7 +386,15 @@ function createWindow() {
   win.on('blur', () => reassertOverlayOnTop('blur'));
   win.on('show', () => reassertOverlayOnTop('show'));
   win.on('restore', () => reassertOverlayOnTop('restore'));
-  win.on('closed', () => { dragState = null; win = null; });
+  win.on('moved', () => updateMousePassthrough());
+  win.on('closed', () => {
+    dragState = null;
+    if (mousePassthroughTimer) clearInterval(mousePassthroughTimer);
+    mousePassthroughTimer = null;
+    mousePassthrough = null;
+    trayVisible = false;
+    win = null;
+  });
 }
 
 app.whenReady().then(() => { createWindow(); connectBridge(); });
@@ -364,8 +413,12 @@ ipcMain.on('show-pet', () => makeWindowVisible('show-pet'));
 ipcMain.on('pet-sprite-rect', (_, rect) => {
   const bounds = win ? win.getBounds() : WINDOW_SIZE;
   lastSpriteRect = sanitizeSpriteRect(rect, bounds.width, bounds.height) || lastSpriteRect;
+  updateMousePassthrough();
 });
-ipcMain.on('event-tray-visibility', () => {});
+ipcMain.on('event-tray-visibility', (_, visible) => {
+  trayVisible = !!visible;
+  updateMousePassthrough();
+});
 ipcMain.on('renderer-log', (_event, payload) => {
   if (DEBUG_EVENTS) console.log('[pet-overlay/renderer]', JSON.stringify(payload || {}));
 });
@@ -411,6 +464,7 @@ ipcMain.on('pet-drag-start', (_, point) => {
   const bounds = win.getBounds();
   lastSpriteRect = sanitizeSpriteRect(point?.spriteRect, bounds.width, bounds.height) || lastSpriteRect;
   dragState = { startX, startY, bounds, spriteRect: lastSpriteRect };
+  setMousePassthrough(false);
   console.log(`[pet-overlay] drag start ${JSON.stringify({ x: bounds.x, y: bounds.y })}`);
 });
 
@@ -428,6 +482,7 @@ ipcMain.on('pet-drag-end', () => {
   if (!win || !dragState) return;
   dragState = null;
   persistWindowPosition();
+  updateMousePassthrough();
   reassertOverlayOnTop('drag-end');
   console.log(`[pet-overlay] drag end ${JSON.stringify(win.getBounds())}`);
 });
