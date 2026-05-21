@@ -6335,7 +6335,9 @@ const COMPANION_LINES = {
 let idleTimer = null;
 let idleInterval = 45000;
 let staleTimer = null;
+let runtimeRunningPulseTimer = null;
 var STALE_TIMEOUT_MS = 21600000;
+var RUNTIME_RUNNING_PULSE_IDLE_MS = 12000;
 
 function scheduleStaleTimeout() {
   if (staleTimer) clearTimeout(staleTimer);
@@ -6353,6 +6355,33 @@ function cancelStaleTimeout() {
     clearTimeout(staleTimer);
     staleTimer = null;
   }
+}
+
+function cancelRuntimeRunningPulseIdle() {
+  if (runtimeRunningPulseTimer) {
+    clearTimeout(runtimeRunningPulseTimer);
+    runtimeRunningPulseTimer = null;
+  }
+}
+
+function scheduleRuntimeRunningPulseIdle() {
+  cancelRuntimeRunningPulseIdle();
+  runtimeRunningPulseTimer = setTimeout(function() {
+    runtimeRunningPulseTimer = null;
+    if (['running', 'run_left', 'run_right'].indexOf(animController.currentState) === -1) return;
+    companionState.mode = 'idle';
+    companionState.running_started_at = null;
+    _tuiTargetState = null;
+    clearRunningCareTimers();
+    persistSessionRuntime('idle');
+    petMemory.today.last_idle_at = isoNow();
+    savePetMemory();
+    animController._playingOneShot = false;
+    animController.transition('idle');
+    hideBubble();
+    renderCompanionSummary();
+    logCompanion('runtime-running-pulse-idle', { delay_ms: RUNTIME_RUNNING_PULSE_IDLE_MS });
+  }, RUNTIME_RUNNING_PULSE_IDLE_MS);
 }
 
 function resetIdleTimer() {
@@ -6405,6 +6434,8 @@ handleEvent = function(msg) {
   _origHandleEvent(msg);
   if (!semanticFirst) updateCompanionState(msg);
   cancelStaleTimeout();
+  if (msg && msg.type === 'running') scheduleRuntimeRunningPulseIdle();
+  else if (msg && msg.type !== 'heartbeat') cancelRuntimeRunningPulseIdle();
   idleInterval = 45000;
   resetIdleTimer();
   requestAnimationFrame(reportSpriteRect);

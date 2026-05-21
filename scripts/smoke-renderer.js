@@ -113,6 +113,20 @@ async function main() {
   const renderer = fs.readFileSync(rendererPath, 'utf8');
   const bridgeCallbacks = { events: null, connected: null };
   const document = makeDocument();
+  let timerId = 0;
+  const timers = new Map();
+  function runTimersWithDelay(delay) {
+    const due = [];
+    for (const [id, timer] of timers.entries()) {
+      if (timer.delay === delay) {
+        timers.delete(id);
+        due.push(timer.callback);
+      }
+    }
+    due.forEach((callback) => {
+      if (typeof callback === 'function') callback();
+    });
+  }
   const context = {
     console,
     document,
@@ -127,10 +141,14 @@ async function main() {
     },
     URL,
     URLSearchParams,
-    setTimeout() {
-      return 1;
+    setTimeout(callback, delay) {
+      const id = ++timerId;
+      timers.set(id, { callback, delay });
+      return id;
     },
-    clearTimeout() {},
+    clearTimeout(id) {
+      timers.delete(id);
+    },
     setInterval() {
       return 1;
     },
@@ -216,6 +234,13 @@ async function main() {
   smoke.handleEvent({ type: 'task_completed', task_title: 'Plugin task', task_id: 'plugin-1' });
   await flush();
   assert(smoke.getCurrentAnimation() === 'idle', 'task_completed should return running animation to idle');
+
+  smoke.handleEvent({ type: 'running', text: 'Plugin pulse running' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'running', 'bare running pulse should animate running');
+  runTimersWithDelay(12000);
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'idle', 'bare running pulse should auto-return to idle');
 
   smoke.handleEvent({ type: 'job_failed', text: 'Tests failed', id: 'job-2', exit_code: 7 });
   await flush();
