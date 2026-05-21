@@ -817,6 +817,7 @@ def _launch_native_overlay(args: argparse.Namespace, *, platform_label: str) -> 
     bridge_mod = importlib.import_module("hermes_pet.bridge")
     port = _resolve_bridge_port(bridge_mod)
     host = os.environ.get("HERMES_PET_HOST") or "127.0.0.1"
+    is_macos_overlay = _is_macos() or platform_label.lower() == "macos"
     state_dir = _state_dir()
     state_dir.mkdir(parents=True, exist_ok=True)
 
@@ -841,9 +842,11 @@ def _launch_native_overlay(args: argparse.Namespace, *, platform_label: str) -> 
     env["HERMES_PET_PORT"] = str(port)
     env.setdefault("HERMES_PET_HOST", host)
     env.setdefault("HERMES_PET_WS_URL", f"ws://{host}:{port}")
+    if is_macos_overlay:
+        env.setdefault("HERMES_PET_SPECIES", "celestia")
     env["HERMES_PET_POSITION_FILE"] = str(_overlay_position_path())
     env["HERMES_PET_MEMORY_FILE"] = str(_pet_memory_path())
-    if _is_macos():
+    if is_macos_overlay:
         env.setdefault("ELECTRON_ENABLE_LOGGING", "1")
         env.setdefault("ELECTRON_ENABLE_STACK_DUMPING", "1")
     cmd = [str(electron), str(overlay_dir / "src" / "main.js")]
@@ -853,7 +856,7 @@ def _launch_native_overlay(args: argparse.Namespace, *, platform_label: str) -> 
         raise PetCLIError(f"Could not launch {platform_label} Electron overlay: {exc}") from exc
     print(f"Hermes {platform_label} pet overlay started (pid {proc.pid})")
     print(f"Overlay WS endpoint: ws://{host}:{port}")
-    _notify_current_pet_state()
+    _notify_current_pet_state(species_override=env.get("HERMES_PET_SPECIES", ""))
     return 0
 
 
@@ -1301,7 +1304,7 @@ def _notify_custom_pet_changed(payload: dict[str, object] | None) -> bool:
     return bridge_mod.send_event_to_bridge(event, port=port, host=host, bridge_url=bridge_url)
 
 
-def _notify_current_pet_state() -> bool:
+def _notify_current_pet_state(species_override: str | None = None) -> bool:
     bridge_mod = importlib.import_module("hermes_pet.bridge")
     port = _resolve_bridge_port(bridge_mod)
     host = os.environ.get("HERMES_PET_HOST") or "127.0.0.1"
@@ -1310,7 +1313,7 @@ def _notify_current_pet_state() -> bool:
     custom_pet = custom_pet_event_payload(_state_dir())
 
     if pet is not None:
-        species = str(getattr(pet, "species", "") or "")
+        species = str(species_override or getattr(pet, "species", "") or "")
         sdef = SPECIES.get(species)
         event: dict[str, object] = {
             "type": "state",

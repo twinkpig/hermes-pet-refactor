@@ -153,6 +153,7 @@
     var customName = String((input && input.custom_name) || '').toLowerCase();
     var species = String((input && input.species) || '').toLowerCase();
     if (customName.indexOf('celestia') !== -1 || customName.indexOf('princess') !== -1 || customName.indexOf('alicorn') !== -1) return 'celestia_princess';
+    if (species.indexOf('celestia') !== -1 || species.indexOf('princess') !== -1 || species.indexOf('alicorn') !== -1) return 'celestia_princess';
     if (customName.indexOf('shinchan') !== -1) return 'shinchan_playmate';
     if (species === 'cat' || species === 'custom') return 'cat_operator';
     if (species === 'flame-onion') return 'onion_watcher';

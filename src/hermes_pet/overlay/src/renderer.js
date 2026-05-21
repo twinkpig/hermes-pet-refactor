@@ -1411,6 +1411,7 @@ function companionProfilePack() {
     : 'classic_default';
   if (!packRuntime.infer) {
     if (customName.indexOf('celestia') !== -1 || customName.indexOf('princess') !== -1 || customName.indexOf('alicorn') !== -1) inferred = 'celestia_princess';
+    else if (species.indexOf('celestia') !== -1 || species.indexOf('princess') !== -1 || species.indexOf('alicorn') !== -1) inferred = 'celestia_princess';
     else if (customName.indexOf('shinchan') !== -1) inferred = 'shinchan_playmate';
     else if (species === 'cat' || species === 'custom') inferred = 'cat_operator';
     else if (species === 'flame-onion') inferred = 'onion_watcher';

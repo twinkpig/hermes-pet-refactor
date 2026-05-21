@@ -752,6 +752,144 @@
           ]
         }
       }
+    },
+    "celestia": {
+      "states": {
+        "idle": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "drag": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "hover": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "walk_left": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "walk_right": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "run_left": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "run_right": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "message_react": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "bubble_react": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "blink": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "waiting": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "waving": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "jumping": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "failed": {
+          "fps": 1,
+          "loop": false,
+          "fallback": "idle",
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "review": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        },
+        "running": {
+          "fps": 1,
+          "loop": true,
+          "assetDir": "idle",
+          "frames": [
+            "idle_00.svg"
+          ]
+        }
+      }
     }
   }
 }

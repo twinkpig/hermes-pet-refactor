@@ -145,6 +145,12 @@ SPECIES = {
         personality="Weasels into tight spots. Finds hidden bugs.",
         favorite_tool="browser",
     ),
+    "celestia": SpeciesDef(
+        name="celestia",
+        rarity="legendary",
+        personality="A cosmic princess who keeps the session bright and steady.",
+        favorite_tool="patch",
+    ),
 }
 
 RARITY_WEIGHTS = {
@@ -259,6 +265,7 @@ class Pet:
             "bee": "Buzz",
             "hedgehog": "Spike",
             "ferret": "Slinky",
+            "celestia": "Celestia",
         }
         name = default_names.get(species, "Buddy")
 
