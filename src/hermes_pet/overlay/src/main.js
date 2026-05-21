@@ -321,7 +321,7 @@ function createWindow() {
     clearTimeout(rendererFallbackTimer);
     const classes = ['overlay-mode'];
     if (clickThrough) classes.push('click-through-mode');
-    if (standardWindow) classes.push('debug-window', 'debug-sprite');
+    if (debugWindow) classes.push('debug-window', 'debug-sprite');
     if (process.env.HERMES_PET_DEBUG_SPRITE === '1') classes.push('debug-sprite');
     win.webContents.executeJavaScript(`document.body.classList.add(${classes.map((c) => JSON.stringify(c)).join(',')})`).catch(() => {});
     if (fs.existsSync(CUSTOM_SPRITE_PATH)) emitCustomSprite(CUSTOM_SPRITE_PATH);

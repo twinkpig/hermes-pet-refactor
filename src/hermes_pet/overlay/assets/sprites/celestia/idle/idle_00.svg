@@ -1,10 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
   <defs>
-    <radialGradient id="halo" cx="50%" cy="38%" r="58%">
-      <stop offset="0" stop-color="#fff7c2" stop-opacity="0.78"/>
-      <stop offset="0.46" stop-color="#b7f5ff" stop-opacity="0.38"/>
-      <stop offset="1" stop-color="#b794f4" stop-opacity="0"/>
-    </radialGradient>
     <linearGradient id="mane" x1="22" y1="44" x2="126" y2="112">
       <stop offset="0" stop-color="#8be9fd"/>
       <stop offset="0.34" stop-color="#f0abfc"/>
@@ -19,7 +14,6 @@
       <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#1f2937" flood-opacity="0.26"/>
     </filter>
   </defs>
-  <circle cx="80" cy="78" r="68" fill="url(#halo)"/>
   <g filter="url(#softShadow)">
     <path d="M92 36c17 10 25 25 23 43 16 6 26 18 26 35-18 4-35 1-50-9-9 7-21 11-35 9-25-4-38-23-35-47 2-18 15-31 32-36 12-4 27-2 39 5z" fill="url(#mane)" opacity="0.9"/>
     <path d="M74 31c5-16 9-24 12-24s6 9 7 26c-5 3-13 3-19-2z" fill="#fff7c2" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>

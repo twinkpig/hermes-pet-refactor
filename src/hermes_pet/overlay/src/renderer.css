@@ -62,6 +62,7 @@ body:not(.show-upload-ui) #upload-hint {
 
 body.overlay-mode #pet-sprite {
   cursor: grab;
+  background-color: transparent;
 }
 
 body.overlay-mode #pet-sprite:active,
