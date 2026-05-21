@@ -12,6 +12,7 @@ let lastConnectionLogMs = 0;
 let bridgeConnected = null;
 let dragState = null;
 let lastSpriteRect = { left: 60, top: 164, width: 160, height: 160 };
+let thinkingStageTimers = [];
 
 const IS_MAC = process.platform === 'darwin';
 const MAC_STANDARD_WINDOW = IS_MAC && process.env.HERMES_PET_MAC_TRANSPARENT !== '1';
@@ -28,6 +29,10 @@ const DEBUG_ANIMATION = process.env.HERMES_PET_DEBUG_ANIMATION === '1';
 const DEBUG_DRAG = process.env.HERMES_PET_DEBUG_DRAG === '1';
 const CUSTOM_SPRITE_DIR = path.join(os.homedir(), '.hermes');
 const CUSTOM_SPRITE_PATH = path.join(CUSTOM_SPRITE_DIR, 'pet_custom.png');
+const PET_MEMORY_FILE = process.env.HERMES_PET_MEMORY_FILE
+  || path.join(os.homedir(), '.hermes_pet', 'pet-memory.json');
+const OVERLAY_COMPANION_FILE = path.join(path.dirname(PET_MEMORY_FILE), 'overlay-companion.json');
+const COMPANION_TIMEZONE = process.env.HERMES_PET_TIMEZONE || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 const positionFilePath = () => process.env.HERMES_PET_POSITION_FILE || path.join(os.homedir(), '.hermes', 'pet_position.json');
 
@@ -191,6 +196,32 @@ function emitCustomSprite(pathOrUrl) {
   if (win) win.webContents.send('custom-sprite-set', pathOrUrl);
 }
 
+function loadJsonFile(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveJsonFile(filePath, payload) {
+  if (!payload || typeof payload !== 'object') return false;
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+    return true;
+  } catch (e) {
+    console.warn(`[pet-overlay] failed to save ${filePath}: ${e.message}`);
+    return false;
+  }
+}
+
+function clearThinkingStageTimers() {
+  while (thinkingStageTimers.length) {
+    clearTimeout(thinkingStageTimers.pop());
+  }
+}
+
 function loadFallbackPage(reason) {
   if (!win || win.isDestroyed()) return;
   const html = `<!doctype html>
@@ -328,6 +359,47 @@ ipcMain.on('minimize-pet', () => { if (win) win.setSize(80, 80); });
 ipcMain.on('restore-pet', () => { if (win) win.setSize(WINDOW_SIZE.width, WINDOW_SIZE.height); });
 ipcMain.on('hide-pet', () => { if (win) win.hide(); });
 ipcMain.on('show-pet', () => makeWindowVisible('show-pet'));
+ipcMain.on('pet-sprite-rect', (_, rect) => {
+  lastSpriteRect = sanitizeSpriteRect(rect, WINDOW_SIZE.width, WINDOW_SIZE.height) || lastSpriteRect;
+});
+ipcMain.on('event-tray-visibility', () => {});
+ipcMain.on('renderer-log', (_event, payload) => {
+  if (DEBUG_EVENTS) console.log('[pet-overlay/renderer]', JSON.stringify(payload || {}));
+});
+ipcMain.on('thinking-stage-schedule', (_event, payload) => {
+  clearThinkingStageTimers();
+  if (!payload || typeof payload !== 'object' || !Array.isArray(payload.stages)) return;
+  const token = payload.token || '';
+  for (const stage of payload.stages) {
+    const delayMs = Number(stage && stage.delay_ms);
+    if (!Number.isFinite(delayMs) || delayMs < 0) continue;
+    const timer = setTimeout(() => {
+      if (win && !win.isDestroyed()) win.webContents.send('thinking-stage-timer', { token, stage });
+    }, delayMs);
+    thinkingStageTimers.push(timer);
+  }
+});
+ipcMain.on('thinking-stage-clear', () => {
+  clearThinkingStageTimers();
+});
+ipcMain.on('pet-memory-load', (event) => {
+  event.returnValue = loadJsonFile(PET_MEMORY_FILE);
+});
+ipcMain.on('pet-memory-save', (_event, payload) => {
+  saveJsonFile(PET_MEMORY_FILE, payload);
+});
+ipcMain.on('pet-memory-meta', (event) => {
+  event.returnValue = { path: PET_MEMORY_FILE };
+});
+ipcMain.on('pet-runtime-config', (event) => {
+  event.returnValue = { timezone: COMPANION_TIMEZONE };
+});
+ipcMain.on('overlay-companion-load', (event) => {
+  event.returnValue = loadJsonFile(OVERLAY_COMPANION_FILE);
+});
+ipcMain.on('overlay-companion-save', (_event, payload) => {
+  saveJsonFile(OVERLAY_COMPANION_FILE, payload);
+});
 
 ipcMain.on('pet-drag-start', (_, point) => {
   if (!win || process.env.HERMES_PET_CLICK_THROUGH === '1') return;
