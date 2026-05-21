@@ -9,13 +9,20 @@ launched on Windows, WSL, or macOS.
 ## Install Plugin
 
 ```bash
-PYTHONPATH=src python3 -m hermes_pet.cli hermes-plugin install --replace
+PYTHONPATH=src python3 -m hermes_pet.cli launch --replace
 ```
 
-The installed plugin lives under:
+`launch` installs or updates the managed plugin before starting the overlay. The
+installed plugin lives under:
 
 ```text
 ~/.hermes/plugins/hermes-pet
+```
+
+For manual repair without starting the overlay:
+
+```bash
+PYTHONPATH=src python3 -m hermes_pet.cli hermes-plugin install --replace
 ```
 
 ## Export Standalone Plugin

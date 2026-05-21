@@ -316,6 +316,24 @@ def _cmd_hermes_plugin_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def _ensure_hermes_plugin_current() -> str:
+    source = _hermes_plugin_resource()
+    if source is None:
+        print("⚠️ Hermes pet plugin template is missing; overlay will still launch.", file=sys.stderr)
+        return "template-missing"
+    target = _hermes_plugin_target(argparse.Namespace(home=""))
+    state = _hermes_plugin_install_state(target, source)
+    if state == "current":
+        return state
+    if target.exists():
+        shutil.rmtree(target)
+    _copy_overlay_resource_tree(source, target)
+    action = "Installed" if state == "missing" else "Updated"
+    print(f"{action} Hermes pet plugin: {target}")
+    print("Restart Hermes TUI so it reloads plugin hooks.")
+    return "current"
+
+
 def _cmd_hermes_plugin_export(args: argparse.Namespace) -> int:
     source = _hermes_plugin_resource()
     if source is None:
@@ -820,6 +838,7 @@ def _launch_native_overlay(args: argparse.Namespace, *, platform_label: str) -> 
     is_macos_overlay = _is_macos() or platform_label.lower() == "macos"
     state_dir = _state_dir()
     state_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_hermes_plugin_current()
 
     if getattr(args, "replace", False):
         overlay_pids = _native_overlay_process_ids()
@@ -878,6 +897,7 @@ def _launch_bridge_and_overlay(args: argparse.Namespace) -> int:
     port = int(os.environ.get("HERMES_PET_PORT", 17473))
     state_dir = _state_dir()
     state_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_hermes_plugin_current()
     position_file = _overlay_position_path()
     memory_file = _pet_memory_path()
 

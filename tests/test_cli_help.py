@@ -132,11 +132,13 @@ def test_macos_launch_starts_bridge_and_electron(monkeypatch, tmp_path, capsys) 
     monkeypatch.setattr(cli, "_start_bridge_process", lambda *, port, host: calls.setdefault("bridge_started", (port, host)))
     monkeypatch.setattr(cli, "_wait_for_bridge", lambda bridge_mod, port, host, timeout_s=5.0: True)
     monkeypatch.setattr(cli, "_notify_current_pet_state", lambda **kwargs: True)
+    monkeypatch.setattr(cli, "_ensure_hermes_plugin_current", lambda: calls.setdefault("plugin_synced", True))
     monkeypatch.setattr(cli.subprocess, "Popen", fake_popen)
 
     assert cli._launch_native_overlay(argparse.Namespace(replace=False), platform_label="macOS") == 0
 
     output = capsys.readouterr().out
+    assert calls["plugin_synced"] is True
     assert calls["bridge_started"] == (17473, "127.0.0.1")
     assert calls["popen"][0] == [str(electron), str(main_js)]
     assert calls["popen"][1]["env"]["HERMES_PET_SPECIES"] == "celestia"
@@ -175,12 +177,40 @@ def test_macos_launch_respects_explicit_host_override(monkeypatch, tmp_path) -> 
     monkeypatch.setattr(cli, "_overlay_dir", lambda: overlay)
     monkeypatch.setattr(cli, "_ensure_native_overlay_dependencies", lambda overlay_dir: electron)
     monkeypatch.setattr(cli, "_notify_current_pet_state", lambda **kwargs: True)
+    monkeypatch.setattr(cli, "_ensure_hermes_plugin_current", lambda: calls.setdefault("plugin_synced", True))
     monkeypatch.setattr(cli.subprocess, "Popen", fake_popen)
 
     assert cli._launch_native_overlay(argparse.Namespace(replace=False), platform_label="macOS") == 0
 
+    assert calls["plugin_synced"] is True
     assert calls["popen"][1]["env"]["HERMES_PET_HOST"] == "127.0.0.2"
     assert calls["popen"][1]["env"]["HERMES_PET_WS_URL"] == "ws://127.0.0.2:17473"
+
+
+def test_wsl_launch_syncs_hermes_plugin(monkeypatch, tmp_path) -> None:
+    calls = {}
+    overlay = tmp_path / "overlay"
+    script = overlay / "scripts" / "launch-windows-overlay.ps1"
+    script.parent.mkdir(parents=True)
+    script.write_text("param()\n", encoding="utf-8")
+
+    def fake_run(cmd, **kwargs):
+        calls["run"] = (cmd, kwargs)
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="ok\n", stderr="")
+
+    monkeypatch.setenv("HERMES_PET_HOME", str(tmp_path / "state"))
+    monkeypatch.setattr(cli, "_is_macos", lambda: False)
+    monkeypatch.setattr(cli, "_is_wsl", lambda: True)
+    monkeypatch.setattr(cli, "_source_overlay_dir", lambda: overlay)
+    monkeypatch.setattr(cli, "_wsl_to_windows_path", lambda path: f"WIN:{path}")
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "powershell.exe" if name == "powershell.exe" else None)
+    monkeypatch.setattr(cli, "_ensure_hermes_plugin_current", lambda: calls.setdefault("plugin_synced", True))
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    assert cli._launch_bridge_and_overlay(argparse.Namespace(replace=False)) == 0
+
+    assert calls["plugin_synced"] is True
+    assert calls["run"][0][0] == "powershell.exe"
 
 
 def test_status_reports_companion_runtime_before_legacy_pet(monkeypatch, tmp_path, capsys) -> None:

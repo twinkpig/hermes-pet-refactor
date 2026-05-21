@@ -19,8 +19,8 @@ Hermes TUI -> Hermes plugin -> ws://127.0.0.1:17473 -> Hermes Pets endpoint -> E
 ## Checkout And Run
 
 ```bash
-git clone git@github.com:twinkpig/hermes-pet.git
-cd hermes-pet
+git clone git@github.com:twinkpig/hermes-pet-refactor.git
+cd hermes-pet-refactor
 export PYTHONPATH=src
 ```
 
@@ -49,12 +49,13 @@ npm install --omit=dev
 cd ..
 ```
 
-## Install Hermes Plugin
+## Hermes Plugin
 
-Install the managed plugin into the active Hermes home:
+`launch` installs or updates the managed plugin in the active Hermes home before
+starting the overlay:
 
 ```bash
-python3 -m hermes_pet.cli hermes-plugin install --replace
+python3 -m hermes_pet.cli launch --replace
 ```
 
 Default target:
@@ -63,13 +64,20 @@ Default target:
 ~/.hermes/plugins/hermes-pet
 ```
 
+Restart Hermes TUI after `launch` reports that the plugin was installed or
+updated.
+
+For manual repair without starting the overlay, run:
+
+```bash
+python3 -m hermes_pet.cli hermes-plugin install --replace
+```
+
 If Hermes uses a custom home:
 
 ```bash
 python3 -m hermes_pet.cli hermes-plugin install --home /path/to/hermes-home --replace
 ```
-
-Restart Hermes TUI after installing the plugin.
 
 ## Standalone Plugin Export
 

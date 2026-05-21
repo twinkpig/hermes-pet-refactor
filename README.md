@@ -29,8 +29,8 @@ remains a git checkout plus direct module execution.
 Clone the repo, run from the checkout, then launch the overlay:
 
 ```bash
-git clone git@github.com:twinkpig/hermes-pet.git
-cd hermes-pet
+git clone git@github.com:twinkpig/hermes-pet-refactor.git
+cd hermes-pet-refactor
 export PYTHONPATH=src
 
 python3 -m hermes_pet.cli launch --replace
@@ -46,17 +46,18 @@ creating a second install location:
 alias hermes-pet='PYTHONPATH=/path/to/hermes-pet/src python3 -m hermes_pet.cli'
 ```
 
-On WSL/Windows, run the CLI from WSL. `hermes-pet launch` opens the Electron
-overlay through the Windows PowerShell launcher. The overlay owns the live
-WebSocket endpoint on port `17473`; CLI and Hermes TUI events send to that
-endpoint.
+On WSL/Windows, run the CLI from WSL. On macOS, run it from the same user
+session as Hermes TUI. `hermes-pet launch` syncs the managed Hermes plugin at
+`~/.hermes/plugins/hermes-pet` on every platform, then opens the Electron
+overlay. CLI and Hermes TUI lifecycle events both send to the overlay endpoint
+on port `17473`.
 
 ## Platform Support
 
 WSL2 on Windows 10/11 with Windows interop is the supported platform for the
 full CLI, direct overlay endpoint, and floating Electron overlay experience.
-Native Linux, macOS, and native Windows are investigation targets only; do not
-treat CLI-only behavior on those platforms as full overlay support.
+macOS has the same Hermes plugin event path with a native Electron overlay and
+local bridge. Native Linux and native Windows remain investigation targets.
 
 See `docs/platform-support.md` for the supported platform matrix, CLI-only
 boundaries, and known blockers.
@@ -69,8 +70,8 @@ Packaging and installer tradeoffs are tracked in
 The maintained operator path is a git checkout plus direct module execution:
 
 ```bash
-git clone git@github.com:twinkpig/hermes-pet.git
-cd hermes-pet
+git clone git@github.com:twinkpig/hermes-pet-refactor.git
+cd hermes-pet-refactor
 export PYTHONPATH=src
 python3 -m hermes_pet.cli status
 ```
@@ -269,6 +270,11 @@ Start the overlay:
 hermes-pet launch
 ```
 
+`launch` first installs or updates the managed Hermes lifecycle plugin at
+`~/.hermes/plugins/hermes-pet` from this checkout. That is the default event path
+for both WSL/Windows and macOS. Restart Hermes TUI after `launch` reports that
+the plugin was installed or updated so the TUI reloads the hook files.
+
 On WSL/Windows, `launch` uses `src/hermes_pet/overlay/scripts/launch-windows-overlay.ps1`.
 That launcher keeps the Electron install in
 `%LOCALAPPDATA%\HermesAgent\pet-overlay-electron`, reuses an existing overlay
@@ -280,11 +286,29 @@ The launch boundary is:
 ```text
 WSL shell
   -> hermes-pet launch
+  -> sync ~/.hermes/plugins/hermes-pet
   -> Windows PowerShell launcher
   -> Electron dependency cache in %LOCALAPPDATA%\HermesAgent\pet-overlay-electron
   -> floating Windows overlay with built-in WS server on 0.0.0.0:17473
-  -> CLI/TUI events sent to the overlay endpoint
+  -> Hermes TUI plugin and CLI events sent to the overlay endpoint
 ```
+
+On macOS, `launch --replace` starts the local Python WebSocket endpoint and the
+native Electron overlay with the same plugin event contract:
+
+```text
+macOS shell
+  -> hermes-pet launch --replace
+  -> sync ~/.hermes/plugins/hermes-pet
+  -> local Python endpoint on 127.0.0.1:17473
+  -> native Electron overlay
+  -> Hermes TUI plugin and CLI events sent to the local endpoint
+```
+
+`hermes-pet hermes-plugin install --replace` remains available for manual repair
+or when you want to update the plugin without launching the overlay. Use
+`hermes-pet hermes-plugin export --output <dir> --replace` only for a standalone
+handoff or vendoring flow.
 
 Keep `pwsh.exe` or `powershell.exe` discoverable from WSL, and keep
 `/mnt/c/Windows/system32` available on `PATH` so process checks work. If the CLI
@@ -736,10 +760,12 @@ It checks prefs, runs doctor, emits a bubble, wraps one successful command, wrap
 
 ## Windows and WSL Notes
 
-Hermes Pets is currently tuned for WSL driving a Windows Electron overlay.
+Hermes Pets is tuned for WSL driving a Windows Electron overlay. The Hermes TUI
+event path is still the managed `hermes-pet` plugin, matching macOS.
 
 - Run CLI commands from WSL.
 - The Electron overlay resources live in `src/hermes_pet/overlay/`.
+- `hermes-pet launch` installs or updates `~/.hermes/plugins/hermes-pet`.
 - `hermes-pet launch` launches Electron through PowerShell on Windows; the overlay owns the live WebSocket endpoint.
 - `hermes-pet launch --replace` is the recovery path for duplicate or stale overlays.
 - The Windows overlay dependencies are cached under `%LOCALAPPDATA%\HermesAgent\pet-overlay-electron`.
