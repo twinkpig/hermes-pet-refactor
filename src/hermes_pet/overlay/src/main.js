@@ -13,10 +13,12 @@ let bridgeConnected = null;
 let dragState = null;
 let lastSpriteRect = { left: 60, top: 164, width: 160, height: 160 };
 
+const IS_MAC = process.platform === 'darwin';
+const MAC_STANDARD_WINDOW = IS_MAC && process.env.HERMES_PET_MAC_TRANSPARENT !== '1';
 const MIN_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 const CONNECTION_LOG_INTERVAL_MS = 30000;
-const DEFAULT_ALWAYS_ON_TOP_LEVEL = process.platform === 'darwin' ? 'floating' : 'screen-saver';
+const DEFAULT_ALWAYS_ON_TOP_LEVEL = IS_MAC ? 'floating' : 'screen-saver';
 const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || DEFAULT_ALWAYS_ON_TOP_LEVEL;
 const WINDOW_SIZE = { width: 280, height: 340 };
 const PET_TITLE = `Hermes Pets Overlay [${process.pid}]`;
@@ -28,6 +30,11 @@ const CUSTOM_SPRITE_DIR = path.join(os.homedir(), '.hermes');
 const CUSTOM_SPRITE_PATH = path.join(CUSTOM_SPRITE_DIR, 'pet_custom.png');
 
 const positionFilePath = () => process.env.HERMES_PET_POSITION_FILE || path.join(os.homedir(), '.hermes', 'pet_position.json');
+
+if (IS_MAC) {
+  app.setName('Hermes Pets');
+  app.setActivationPolicy('regular');
+}
 
 function defaultWindowPosition() {
   const area = screen.getPrimaryDisplay().workArea || screen.getPrimaryDisplay().bounds;
@@ -97,7 +104,9 @@ function persistWindowPosition() {
 function reassertOverlayOnTop(reason) {
   if (!win) return;
   try {
-    win.setAlwaysOnTop(true, ALWAYS_ON_TOP_LEVEL);
+    if (!MAC_STANDARD_WINDOW || process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL) {
+      win.setAlwaysOnTop(true, ALWAYS_ON_TOP_LEVEL);
+    }
     win.moveTop();
     console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
   } catch (e) {
@@ -109,10 +118,11 @@ function makeWindowVisible(reason) {
   if (!win) return;
   try {
     if (process.platform === 'darwin') {
-      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      if (!MAC_STANDARD_WINDOW) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
       win.setFullScreenable(false);
       win.show();
       win.focus();
+      app.focus({ steal: true });
     } else {
       win.showInactive();
     }
@@ -185,30 +195,32 @@ function emitCustomSprite(pathOrUrl) {
 function createWindow() {
   if (win) return;
   const pos = loadPosition();
-  const focusable = process.env.HERMES_PET_FOCUSABLE === '1' || process.platform === 'darwin';
+  const focusable = process.env.HERMES_PET_FOCUSABLE === '1' || IS_MAC;
   const clickThrough = process.env.HERMES_PET_CLICK_THROUGH === '1';
   const debugWindow = process.env.HERMES_PET_DEBUG_WINDOW === '1';
+  const standardWindow = debugWindow || MAC_STANDARD_WINDOW;
   const showUpload = process.env.HERMES_PET_SHOW_UPLOAD === '1' ? '1' : '0';
   console.log(`[pet-overlay] platform ${process.platform}`);
   console.log(`[pet-overlay] always-on-top level ${ALWAYS_ON_TOP_LEVEL}`);
   if (clickThrough) console.log('[pet-overlay] click-through enabled');
   if (debugWindow) console.log('[pet-overlay] debug window enabled');
+  if (MAC_STANDARD_WINDOW) console.log('[pet-overlay] mac standard window enabled');
 
   win = new BrowserWindow({
     ...WINDOW_SIZE,
     x: pos.x,
     y: pos.y,
     title: PET_TITLE,
-    transparent: !debugWindow,
-    frame: debugWindow ? true : false,
-    skipTaskbar: debugWindow ? false : true,
-    alwaysOnTop: true,
+    transparent: !standardWindow,
+    frame: standardWindow,
+    skipTaskbar: !standardWindow,
+    alwaysOnTop: !MAC_STANDARD_WINDOW,
     focusable,
-    hasShadow: debugWindow ? true : false,
-    resizable: debugWindow ? true : false,
-    backgroundColor: debugWindow ? '#111827' : '#00000000',
-    show: false,
-    fullScreenable: process.platform !== 'darwin',
+    hasShadow: standardWindow,
+    resizable: standardWindow,
+    backgroundColor: standardWindow ? '#111827' : '#00000000',
+    show: MAC_STANDARD_WINDOW,
+    fullScreenable: !IS_MAC,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
 
@@ -220,7 +232,7 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     const classes = ['overlay-mode'];
     if (clickThrough) classes.push('click-through-mode');
-    if (debugWindow) classes.push('debug-window', 'debug-sprite');
+    if (standardWindow) classes.push('debug-window', 'debug-sprite');
     if (process.env.HERMES_PET_DEBUG_SPRITE === '1') classes.push('debug-sprite');
     win.webContents.executeJavaScript(`document.body.classList.add(${classes.map((c) => JSON.stringify(c)).join(',')})`).catch(() => {});
     if (fs.existsSync(CUSTOM_SPRITE_PATH)) emitCustomSprite(CUSTOM_SPRITE_PATH);
