@@ -1,23 +1,30 @@
 # Hermes Pets
 
-Hermes Pets is a local desktop companion for Hermes-style daily work: a small animated overlay that reacts to commands, messages, briefs, and ambient status events while staying fully controllable from the terminal.
+<p align="center">
+  <img src="docs/assets/hermes-pets-social-card.jpg" alt="Hermes Pets desktop companion overview" width="100%">
+</p>
 
-It exists to make long local coding sessions feel more legible and alive. The pet gives visible feedback when work starts, finishes, fails, needs attention, or goes quiet, without requiring a hosted service or remote account.
+Hermes Pets turns local Hermes sessions into a visible desktop workflow: a small
+animated companion overlay that reacts when commands run, reviews happen,
+approvals arrive, messages land, or the session goes quiet.
 
-The repo combines a Python CLI, local state under `~/.hermes_pet`, and a
-floating Electron overlay for WSL/Windows. The current Windows overlay exposes
-the live WebSocket endpoint itself; older `bridge` names still appear in Python
-modules and compatibility diagnostics. The current tool is focused on practical
-operator use:
+It is built for people who spend long stretches inside a local agent loop and
+want status they can read at a glance. The pet stays local, runs from a checkout,
+and works through the same managed Hermes plugin path on macOS and WSL/Windows.
+Custom pet packages let the overlay switch from the built-in companion to richer
+demo characters, including playful kid and celestial princess style packs.
 
-- Launch one floating pet overlay from WSL/Windows.
-- Emit lightweight activity events to the overlay.
+The current tool is focused on practical operator use:
+
+- Launch a floating Electron pet overlay on macOS or WSL/Windows.
+- Drive animated states from Hermes lifecycle plugin events.
 - Wrap commands so successes, failures, duration, and retry information are recorded.
 - Send message notifications from external channels.
+- Keep the overlay transparent and click-through where the pet is not interactive.
 - Control quiet/mute preferences for bubbles.
 - Generate a short local brief from recent jobs and events.
 - Open a localhost-only, token-protected dashboard for state, custom pets, prefs, voice preview, and achievements.
-- Diagnose overlay endpoint, state, prefs, and job-history health.
+- Diagnose overlay endpoint, plugin status, state, prefs, and job-history health.
 
 Pet state and local history live under `~/.hermes_pet` by default. Set `HERMES_PET_HOME` when you intentionally want an isolated state directory. Back up the directory itself when you need a restorable copy; `hermes-pet state export` is a redacted diagnostic snapshot, not a backup format.
 
