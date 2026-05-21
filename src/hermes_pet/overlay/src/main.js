@@ -31,7 +31,10 @@ const positionFilePath = () => process.env.HERMES_PET_POSITION_FILE || path.join
 
 function defaultWindowPosition() {
   const area = screen.getPrimaryDisplay().workArea || screen.getPrimaryDisplay().bounds;
-  return { x: area.x + area.width - 200, y: area.y + area.height - 220 };
+  return {
+    x: area.x + Math.max(0, area.width - WINDOW_SIZE.width - 24),
+    y: area.y + Math.max(0, area.height - WINDOW_SIZE.height - 24),
+  };
 }
 
 function clampToWorkArea(x, y, width = WINDOW_SIZE.width, height = WINDOW_SIZE.height) {
@@ -108,8 +111,11 @@ function makeWindowVisible(reason) {
     if (process.platform === 'darwin') {
       win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
       win.setFullScreenable(false);
+      win.show();
+      win.focus();
+    } else {
+      win.showInactive();
     }
-    win.showInactive();
     reassertOverlayOnTop(reason);
   } catch (e) {
     console.warn(`[pet-overlay] failed to show overlay after ${reason}: ${e.message}`);
@@ -179,7 +185,7 @@ function emitCustomSprite(pathOrUrl) {
 function createWindow() {
   if (win) return;
   const pos = loadPosition();
-  const focusable = process.env.HERMES_PET_FOCUSABLE === '1';
+  const focusable = process.env.HERMES_PET_FOCUSABLE === '1' || process.platform === 'darwin';
   const clickThrough = process.env.HERMES_PET_CLICK_THROUGH === '1';
   const showUpload = process.env.HERMES_PET_SHOW_UPLOAD === '1' ? '1' : '0';
   console.log(`[pet-overlay] platform ${process.platform}`);
