@@ -235,6 +235,13 @@ async function main() {
   await flush();
   assert(smoke.getCurrentAnimation() === 'idle', 'task_completed should return running animation to idle');
 
+  smoke.handleEvent({ type: 'task_started', task_title: 'Plugin task', task_id: 'plugin-2' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'running', 'second task_started should animate running');
+  smoke.handleEvent({ type: 'idle' });
+  await flush();
+  assert(smoke.getCurrentAnimation() === 'idle', 'idle should not be realigned to running after an active semantic task');
+
   smoke.handleEvent({ type: 'running', text: 'Plugin pulse running' });
   await flush();
   assert(smoke.getCurrentAnimation() === 'running', 'bare running pulse should animate running');

@@ -4079,9 +4079,6 @@ function alignAmbientLifecycleEvent(msg) {
   if (msg.type === 'idle' && isBlockedRuntimeState(semantic, mode)) {
     return Object.assign({}, msg, { type: blockedMode });
   }
-  if (msg.type === 'idle' && semanticStatus === 'active' && mode === 'running') {
-    return Object.assign({}, msg, { type: 'running' });
-  }
   if (msg.type === 'idle' && semanticStatus === 'failed') {
     return Object.assign({}, msg, { type: 'failed' });
   }
