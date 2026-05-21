@@ -80,8 +80,8 @@ def test_macos_overlay_defaults_to_transparent_window() -> None:
     assert "frame: standardWindow" in main
     assert "backgroundColor: standardWindow ? '#111827' : '#00000000'" in main
     assert "body.mac-overlay #pet-sprite" in renderer_css
-    assert "width: 200px;" in renderer_css
-    assert "height: 200px;" in renderer_css
+    assert "width: 130px;" in renderer_css
+    assert "height: 130px;" in renderer_css
     assert "body.overlay-mode #pet-sprite.sprite-asset-loaded" in renderer_css
     assert "spriteEl.classList.add('sprite-asset-loaded')" in renderer
 

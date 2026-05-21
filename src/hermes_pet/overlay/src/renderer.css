@@ -66,8 +66,8 @@ body.overlay-mode #pet-sprite {
 }
 
 body.mac-overlay #pet-sprite {
-  width: 200px;
-  height: 200px;
+  width: 130px;
+  height: 130px;
   background-image: none;
   border-radius: 0;
 }
