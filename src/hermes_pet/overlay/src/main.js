@@ -321,6 +321,7 @@ function createWindow() {
     rendererLoaded = true;
     clearTimeout(rendererFallbackTimer);
     const classes = ['overlay-mode'];
+    if (IS_MAC) classes.push('mac-overlay');
     if (clickThrough) classes.push('click-through-mode');
     if (debugWindow) classes.push('debug-window', 'debug-sprite');
     if (process.env.HERMES_PET_DEBUG_SPRITE === '1') classes.push('debug-sprite');
@@ -361,7 +362,8 @@ ipcMain.on('restore-pet', () => { if (win) win.setSize(WINDOW_SIZE.width, WINDOW
 ipcMain.on('hide-pet', () => { if (win) win.hide(); });
 ipcMain.on('show-pet', () => makeWindowVisible('show-pet'));
 ipcMain.on('pet-sprite-rect', (_, rect) => {
-  lastSpriteRect = sanitizeSpriteRect(rect, WINDOW_SIZE.width, WINDOW_SIZE.height) || lastSpriteRect;
+  const bounds = win ? win.getBounds() : WINDOW_SIZE;
+  lastSpriteRect = sanitizeSpriteRect(rect, bounds.width, bounds.height) || lastSpriteRect;
 });
 ipcMain.on('event-tray-visibility', () => {});
 ipcMain.on('renderer-log', (_event, payload) => {

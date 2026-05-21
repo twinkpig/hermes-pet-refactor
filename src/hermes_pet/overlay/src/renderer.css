@@ -65,6 +65,18 @@ body.overlay-mode #pet-sprite {
   background-color: transparent;
 }
 
+body.mac-overlay #pet-sprite {
+  width: 200px;
+  height: 200px;
+  background-image: none;
+  border-radius: 0;
+}
+
+body.overlay-mode #pet-sprite.sprite-asset-loaded {
+  background-color: transparent;
+  border-radius: 0;
+}
+
 body.overlay-mode #pet-sprite:active,
 body.overlay-mode #pet-sprite.dragging {
   cursor: grabbing;

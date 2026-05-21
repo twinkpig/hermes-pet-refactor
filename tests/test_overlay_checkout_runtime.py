@@ -67,14 +67,23 @@ def test_checkout_runtime_bundles_celestia_sprite_frames() -> None:
 def test_macos_overlay_defaults_to_transparent_window() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     main = (repo_root / "src/hermes_pet/overlay/src/main.js").read_text(encoding="utf-8")
+    renderer_css = (repo_root / "src/hermes_pet/overlay/src/renderer.css").read_text(encoding="utf-8")
+    renderer = (repo_root / "src/hermes_pet/overlay/src/renderer.js").read_text(encoding="utf-8")
 
     assert "const MAC_WINDOW_SIZE = { width: 280, height: 1020 };" in main
     assert "...(IS_MAC ? MAC_WINDOW_SIZE : WINDOW_SIZE)" in main
+    assert "if (IS_MAC) classes.push('mac-overlay');" in main
+    assert "sanitizeSpriteRect(rect, bounds.width, bounds.height)" in main
     assert "process.env.HERMES_PET_MAC_STANDARD_WINDOW === '1'" in main
     assert "process.env.HERMES_PET_MAC_TRANSPARENT" not in main
     assert "transparent: !standardWindow" in main
     assert "frame: standardWindow" in main
     assert "backgroundColor: standardWindow ? '#111827' : '#00000000'" in main
+    assert "body.mac-overlay #pet-sprite" in renderer_css
+    assert "width: 200px;" in renderer_css
+    assert "height: 200px;" in renderer_css
+    assert "body.overlay-mode #pet-sprite.sprite-asset-loaded" in renderer_css
+    assert "spriteEl.classList.add('sprite-asset-loaded')" in renderer
 
 
 def test_overlay_entrypoints_share_renderer_ipc_contract() -> None:

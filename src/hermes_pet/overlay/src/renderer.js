@@ -293,6 +293,7 @@ const animController = {
 
     this._lastBgSrc = src;
     spriteEl.style.backgroundImage = 'url("' + src + '")';
+    spriteEl.classList.add('sprite-asset-loaded');
     this.debugLog('frame ' + frameIndex + ' of "' + stateName + '"  src=' + src);
     if (DEBUG_ANIM) this._updateDebugOverlay(stateName, frameIndex, src);
   },
@@ -2892,7 +2893,10 @@ function setSprite(species, variant) {
     animController.species = species;
     animController.customPet = nextCustomPet || null;
     if (animController.manifest) animController.init(species, nextCustomPet);
-    else spriteEl.style.backgroundImage = 'url("' + ASSET_BASE + '/' + species + '.png")';
+    else {
+      spriteEl.style.backgroundImage = 'url("' + ASSET_BASE + '/' + species + '.png")';
+      spriteEl.classList.add('sprite-asset-loaded');
+    }
   }
 }
 
@@ -6173,6 +6177,7 @@ document.body.classList.toggle('show-upload-ui', uploadEnabled);
 
 function setCustomSprite(filePath) {
   spriteEl.style.backgroundImage = `url("${filePath}")`;
+  spriteEl.classList.add('sprite-asset-loaded');
   state.species = 'custom';
   state.variant = 'normal';
   showBubble('New custom sprite uploaded!', 3000);
