@@ -56,8 +56,9 @@ on port `17473`.
 
 WSL2 on Windows 10/11 with Windows interop is the supported platform for the
 full CLI, direct overlay endpoint, and floating Electron overlay experience.
-macOS has the same Hermes plugin event path with a native Electron overlay and
-local bridge. Native Linux and native Windows remain investigation targets.
+macOS is supported on verified real hardware with the same Hermes plugin event
+path, native Electron overlay, and local bridge. Native Linux and native
+Windows remain investigation targets.
 
 See `docs/platform-support.md` for the supported platform matrix, CLI-only
 boundaries, and known blockers.

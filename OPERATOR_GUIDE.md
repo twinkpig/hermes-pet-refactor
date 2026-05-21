@@ -33,9 +33,9 @@ Windows gateway IP) or the endpoint configured by `HERMES_PET_WS_URL`. No
 separate Python bridge process is required for normal WSL/Windows use, although
 the legacy `bridge` name still appears in some CLI and diagnostic labels.
 
-The full overlay path is supported on WSL2/Windows only. Native Linux, macOS,
-and native Windows remain investigation targets until their launcher, process
-control, and live verification paths are proven. See
+The full overlay path is supported on WSL2/Windows and verified macOS. Native
+Linux and native Windows remain investigation targets until their launcher,
+process control, and live verification paths are proven. See
 `docs/platform-support.md` before describing a platform as supported.
 
 For reliable launch checks, keep `/mnt/c/Windows/System32/WindowsPowerShell/v1.0`

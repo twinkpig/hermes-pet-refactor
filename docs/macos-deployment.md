@@ -2,7 +2,9 @@
 
 ## Status
 
-macOS support is experimental until it is verified on real Mac hardware.
+macOS support is verified on real Mac hardware. The supported path is a Python
+install from the GitHub repository plus the packaged Electron overlay and
+managed Hermes plugin.
 
 The expected runtime is:
 
@@ -148,9 +150,9 @@ Expected:
 - Electron overlay exits
 - local Python WebSocket endpoint exits
 
-## Promotion Checklist
+## Supported Behavior Checklist
 
-Before marking macOS fully supported:
+The verified macOS path covers:
 
 - overlay appears on the primary display
 - non-sprite area is click-through
