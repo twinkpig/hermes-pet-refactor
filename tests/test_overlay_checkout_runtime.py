@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 
@@ -44,3 +45,19 @@ def test_checkout_runtime_windows_overlay_runs_a_direct_ws_server() -> None:
     assert '$env:HERMES_PET_WS_URL = "ws://${BridgeHost}:${Port}"' not in launcher
     assert 'Overlay WS endpoint: ws://$($env:HERMES_PET_BIND_HOST):$Port' in launcher
     assert "-WindowStyle Hidden" in launcher
+
+
+def test_checkout_runtime_bundles_celestia_sprite_frames() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    overlay_dir = repo_root / "src/hermes_pet/overlay"
+    manifest = json.loads((overlay_dir / "assets/manifest.json").read_text(encoding="utf-8"))
+    states = manifest["species"]["celestia"]["states"]
+
+    assert states["idle"]["frames"] == [f"idle_{index:02d}.png" for index in range(7)]
+    assert states["running"]["frames"] == [f"running_{index:02d}.png" for index in range(7)]
+    assert "idle_00.svg" not in states["idle"]["frames"]
+
+    for state_name, state in states.items():
+        asset_dir = state.get("assetDir", state_name)
+        for frame in state["frames"]:
+            assert (overlay_dir / "assets/sprites/celestia" / asset_dir / frame).is_file()
