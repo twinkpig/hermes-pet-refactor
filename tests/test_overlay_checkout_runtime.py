@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 
@@ -74,3 +75,19 @@ def test_macos_overlay_defaults_to_transparent_window() -> None:
     assert "transparent: !standardWindow" in main
     assert "frame: standardWindow" in main
     assert "backgroundColor: standardWindow ? '#111827' : '#00000000'" in main
+
+
+def test_overlay_entrypoints_share_renderer_ipc_contract() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    overlay_dir = repo_root / "src/hermes_pet/overlay/src"
+    preload = (overlay_dir / "preload.js").read_text(encoding="utf-8")
+    mac_main = (overlay_dir / "main.js").read_text(encoding="utf-8")
+    windows_main = (overlay_dir / "main.windows.js").read_text(encoding="utf-8")
+
+    channels = sorted(set(re.findall(r"ipcRenderer\.(?:send|sendSync|invoke)\('([^']+)'", preload)))
+    assert channels
+    for channel in channels:
+        handler = f"ipcMain.on('{channel}'"
+        invoke_handler = f"ipcMain.handle('{channel}'"
+        assert handler in mac_main or invoke_handler in mac_main, f"mac main missing {channel}"
+        assert handler in windows_main or invoke_handler in windows_main, f"windows main missing {channel}"
