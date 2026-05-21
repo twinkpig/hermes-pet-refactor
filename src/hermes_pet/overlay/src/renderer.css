@@ -12,6 +12,10 @@ html, body {
   user-select: none;
 }
 
+body.debug-window {
+  background: rgba(17, 24, 39, 0.96);
+}
+
 #pet-container {
   position: relative;
   width: 100%;
@@ -68,6 +72,21 @@ body.debug-sprite #pet-sprite {
 
 body.debug-sprite #pet-container {
   outline: 1px dashed rgba(96, 165, 250, 0.85);
+}
+
+body.debug-window #pet-container {
+  border: 2px solid rgba(96, 165, 250, 0.95);
+}
+
+body.debug-window::before {
+  content: "Hermes Pets debug window";
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 9999;
+  color: #f9fafb;
+  font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: none;
 }
 
 #pet-sprite.idle,

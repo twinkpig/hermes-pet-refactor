@@ -187,24 +187,26 @@ function createWindow() {
   const pos = loadPosition();
   const focusable = process.env.HERMES_PET_FOCUSABLE === '1' || process.platform === 'darwin';
   const clickThrough = process.env.HERMES_PET_CLICK_THROUGH === '1';
+  const debugWindow = process.env.HERMES_PET_DEBUG_WINDOW === '1';
   const showUpload = process.env.HERMES_PET_SHOW_UPLOAD === '1' ? '1' : '0';
   console.log(`[pet-overlay] platform ${process.platform}`);
   console.log(`[pet-overlay] always-on-top level ${ALWAYS_ON_TOP_LEVEL}`);
   if (clickThrough) console.log('[pet-overlay] click-through enabled');
+  if (debugWindow) console.log('[pet-overlay] debug window enabled');
 
   win = new BrowserWindow({
     ...WINDOW_SIZE,
     x: pos.x,
     y: pos.y,
     title: PET_TITLE,
-    transparent: true,
-    frame: false,
-    skipTaskbar: true,
+    transparent: !debugWindow,
+    frame: debugWindow ? true : false,
+    skipTaskbar: debugWindow ? false : true,
     alwaysOnTop: true,
     focusable,
-    hasShadow: false,
-    resizable: false,
-    backgroundColor: '#00000000',
+    hasShadow: debugWindow ? true : false,
+    resizable: debugWindow ? true : false,
+    backgroundColor: debugWindow ? '#111827' : '#00000000',
     show: false,
     fullScreenable: process.platform !== 'darwin',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
@@ -218,6 +220,7 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     const classes = ['overlay-mode'];
     if (clickThrough) classes.push('click-through-mode');
+    if (debugWindow) classes.push('debug-window', 'debug-sprite');
     if (process.env.HERMES_PET_DEBUG_SPRITE === '1') classes.push('debug-sprite');
     win.webContents.executeJavaScript(`document.body.classList.add(${classes.map((c) => JSON.stringify(c)).join(',')})`).catch(() => {});
     if (fs.existsSync(CUSTOM_SPRITE_PATH)) emitCustomSprite(CUSTOM_SPRITE_PATH);
