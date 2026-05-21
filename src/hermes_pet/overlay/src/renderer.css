@@ -31,10 +31,17 @@ body.debug-window {
 #pet-sprite {
   width: 100px;
   height: 100px;
-  background-color: transparent;
+  background-color: #f3eee6;
+  background-image:
+    radial-gradient(circle at 34% 36%, #111827 0 5px, transparent 6px),
+    radial-gradient(circle at 66% 36%, #111827 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 58%, #111827 0 4px, transparent 5px),
+    radial-gradient(circle at 50% 74%, rgba(0, 0, 0, 0.12) 0 22px, transparent 23px),
+    linear-gradient(135deg, #f7d08a, #f97316);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  border-radius: 42% 42% 48% 48%;
   transition: transform 0.3s ease;
   transform-origin: 50% 82%;
   will-change: transform;

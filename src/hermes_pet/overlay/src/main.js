@@ -192,6 +192,54 @@ function emitCustomSprite(pathOrUrl) {
   if (win) win.webContents.send('custom-sprite-set', pathOrUrl);
 }
 
+function loadFallbackPage(reason) {
+  if (!win || win.isDestroyed()) return;
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #111827;
+      color: #f9fafb;
+      font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      border: 2px solid #60a5fa;
+      box-sizing: border-box;
+    }
+    .pet {
+      width: 96px;
+      height: 96px;
+      border-radius: 42% 42% 48% 48%;
+      background:
+        radial-gradient(circle at 34% 36%, #111827 0 5px, transparent 6px),
+        radial-gradient(circle at 66% 36%, #111827 0 5px, transparent 6px),
+        radial-gradient(circle at 50% 58%, #111827 0 4px, transparent 5px),
+        linear-gradient(135deg, #f7d08a, #f97316);
+    }
+    .msg { max-width: 220px; text-align: center; line-height: 1.35; }
+    code { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="pet"></div>
+  <div class="msg">Hermes Pets fallback window<br><code>${String(reason).replace(/[<>&]/g, '')}</code></div>
+</body>
+</html>`;
+  win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch((e) => {
+    console.error('[pet-overlay] fallback page failed:', e.message);
+  });
+}
+
 function createWindow() {
   if (win) return;
   const pos = loadPosition();
@@ -224,12 +272,23 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
 
+  let rendererLoaded = false;
+  const rendererFallbackTimer = setTimeout(() => {
+    if (!rendererLoaded) loadFallbackPage('renderer load timeout');
+  }, 2000);
+  rendererFallbackTimer.unref?.();
+
   win.loadFile(path.join(__dirname, 'renderer.html'), {
     query: { species: PET_SPECIES, showUpload, debugEvents: DEBUG_EVENTS ? '1' : '0', debugAnimation: DEBUG_ANIMATION ? '1' : '0', debugDrag: DEBUG_DRAG ? '1' : '0' },
+  }).catch((e) => {
+    clearTimeout(rendererFallbackTimer);
+    loadFallbackPage('renderer load failed: ' + e.message);
   });
   notifyBridgeConnected(false);
 
   win.webContents.once('did-finish-load', () => {
+    rendererLoaded = true;
+    clearTimeout(rendererFallbackTimer);
     const classes = ['overlay-mode'];
     if (clickThrough) classes.push('click-through-mode');
     if (standardWindow) classes.push('debug-window', 'debug-sprite');
