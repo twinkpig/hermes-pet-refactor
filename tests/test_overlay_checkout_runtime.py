@@ -61,3 +61,14 @@ def test_checkout_runtime_bundles_celestia_sprite_frames() -> None:
         asset_dir = state.get("assetDir", state_name)
         for frame in state["frames"]:
             assert (overlay_dir / "assets/sprites/celestia" / asset_dir / frame).is_file()
+
+
+def test_macos_overlay_defaults_to_transparent_window() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    main = (repo_root / "src/hermes_pet/overlay/src/main.js").read_text(encoding="utf-8")
+
+    assert "process.env.HERMES_PET_MAC_STANDARD_WINDOW === '1'" in main
+    assert "process.env.HERMES_PET_MAC_TRANSPARENT" not in main
+    assert "transparent: !standardWindow" in main
+    assert "frame: standardWindow" in main
+    assert "backgroundColor: standardWindow ? '#111827' : '#00000000'" in main

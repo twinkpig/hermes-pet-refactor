@@ -15,7 +15,7 @@ let lastSpriteRect = { left: 60, top: 164, width: 160, height: 160 };
 let thinkingStageTimers = [];
 
 const IS_MAC = process.platform === 'darwin';
-const MAC_STANDARD_WINDOW = IS_MAC && process.env.HERMES_PET_MAC_TRANSPARENT !== '1';
+const MAC_STANDARD_WINDOW = IS_MAC && process.env.HERMES_PET_MAC_STANDARD_WINDOW === '1';
 const MIN_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 const CONNECTION_LOG_INTERVAL_MS = 30000;
@@ -292,12 +292,12 @@ function createWindow() {
     transparent: !standardWindow,
     frame: standardWindow,
     skipTaskbar: !standardWindow,
-    alwaysOnTop: !MAC_STANDARD_WINDOW,
+    alwaysOnTop: !standardWindow,
     focusable,
     hasShadow: standardWindow,
     resizable: standardWindow,
     backgroundColor: standardWindow ? '#111827' : '#00000000',
-    show: MAC_STANDARD_WINDOW,
+    show: standardWindow,
     fullScreenable: !IS_MAC,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
