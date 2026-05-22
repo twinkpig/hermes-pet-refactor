@@ -848,6 +848,47 @@ function saveOverlayCompanionState() {
   renderCompanionSummary();
 }
 
+function reconcileStaleSemanticTaskOnBoot() {
+  var semantic = petMemory && petMemory.semantic_task;
+  if (!semantic || typeof semantic !== 'object') return false;
+  var status = String(semantic.status || '').trim().toLowerCase();
+  if (status !== 'active' && status !== 'blocked') return false;
+
+  var day = (overlayCompanion && overlayCompanion.day) || {};
+  var runtimeMode = String(day.session_mode || '').trim().toLowerCase();
+  var runtimeOpen = !!day.session_open;
+  if (runtimeOpen || (runtimeMode && runtimeMode !== 'idle')) return false;
+
+  var updatedAt = Date.parse(semantic.updated_at || semantic.started_at || '');
+  var lastIdleAt = Date.parse((petMemory.today || {}).last_idle_at || '');
+  if (!Number.isFinite(updatedAt) || !Number.isFinite(lastIdleAt) || lastIdleAt < updatedAt) return false;
+
+  semantic.status = 'completed';
+  semantic.active = false;
+  semantic.needs_user = false;
+  semantic.blocker_type = '';
+  semantic.blocker_detail = '';
+  semantic.next_action = '';
+  semantic.completed_at = semantic.completed_at || (petMemory.today || {}).last_idle_at || isoNow();
+  semantic.updated_at = isoNow();
+  petMemory.narrative = Object.assign({}, defaultPetMemory().narrative, petMemory.narrative || {});
+  petMemory.narrative.need_line = '';
+  petMemory.narrative.next_line = '';
+  petMemory.narrative.updated_at = isoNow();
+  logCompanion('stale-semantic-cleared-on-boot', {
+    previous_status: status,
+    last_idle_at: (petMemory.today || {}).last_idle_at || '',
+    previous_updated_at: Number.isFinite(updatedAt) ? new Date(updatedAt).toISOString() : '',
+  });
+  try {
+    if (window.hermesPetAPI && typeof window.hermesPetAPI.savePetMemory === 'function') {
+      window.hermesPetAPI.savePetMemory(petMemory);
+    }
+  } catch (_) {}
+  cachePetMemoryLocally();
+  return true;
+}
+
 function applyCompanionMemorySnapshot(snapshot, sourceType) {
   if (!snapshot || typeof snapshot !== 'object') return false;
   petMemory = mergePetMemory(snapshot);
@@ -2378,7 +2419,6 @@ var petMemory = loadPetMemory();
 var overlayCompanion = loadOverlayCompanionState();
 rotatePetMemoryDay();
 rotateOverlayCompanionDay();
-logCompanion('preferences-loaded', companionPreferences());
 
 var companionState = {
   mode: 'idle',
@@ -2401,6 +2441,9 @@ var companionState = {
   late_night_timer: null,
   wrap_up_timer: null,
 };
+
+reconcileStaleSemanticTaskOnBoot();
+logCompanion('preferences-loaded', companionPreferences());
 
 const RECENT_EVENT_LIMIT = 6;
 const BUBBLE_THROTTLE_MS = 2500;

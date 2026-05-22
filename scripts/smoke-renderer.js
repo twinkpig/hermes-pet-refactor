@@ -113,6 +113,41 @@ async function main() {
   const renderer = fs.readFileSync(rendererPath, 'utf8');
   const bridgeCallbacks = { events: null, connected: null };
   const document = makeDocument();
+  let savedPetMemory = null;
+  const stalePetMemory = {
+    version: 7,
+    today: {
+      date: '2026-05-22',
+      tasks_started: 1,
+      tasks_completed: 1,
+      last_idle_at: '2026-05-22T03:33:57.597Z',
+    },
+    semantic_task: {
+      task_id: '',
+      title: 'Approval needed',
+      kind: 'approval_heavy',
+      status: 'active',
+      updated_at: '2026-05-22T03:33:29.065Z',
+      active: true,
+      needs_user: false,
+      blocker_type: '',
+      blocker_detail: '',
+      next_action: '',
+    },
+    narrative: {
+      focus_line: 'Approval needed',
+      need_line: '',
+      next_line: '',
+    },
+  };
+  const idleOverlayCompanion = {
+    day: {
+      date: '2026-05-22',
+      session_open: false,
+      session_mode: 'idle',
+      session_started_at: '2026-05-22T03:33:25.538Z',
+    },
+  };
   let timerId = 0;
   const timers = new Map();
   function runTimersWithDelay(delay) {
@@ -166,6 +201,13 @@ async function main() {
       addEventListener() {},
       hermesPetAPI: {
         loadManifest: () => manifest,
+        loadPetMemory: () => JSON.parse(JSON.stringify(stalePetMemory)),
+        savePetMemory: (payload) => {
+          savedPetMemory = JSON.parse(JSON.stringify(payload));
+        },
+        getPetMemoryMeta: () => ({ path: '/tmp/pet-memory.json' }),
+        loadOverlayCompanionState: () => JSON.parse(JSON.stringify(idleOverlayCompanion)),
+        saveOverlayCompanionState() {},
         onPetEvent: (callback) => {
           bridgeCallbacks.events = callback;
         },
@@ -193,6 +235,9 @@ async function main() {
   assert(typeof bridgeCallbacks.events === 'function', 'pet event listener was not registered');
   assert(typeof bridgeCallbacks.connected === 'function', 'bridge connection listener was not registered');
   assert(smoke.getCurrentAnimation() === 'idle', 'startup should render idle animation');
+  assert(savedPetMemory, 'startup should persist stale semantic cleanup');
+  assert(savedPetMemory.semantic_task.status === 'completed', 'stale active semantic task should be completed on idle boot');
+  assert(savedPetMemory.semantic_task.active === false, 'stale active semantic task should not stay active on idle boot');
 
   smoke.handleEvent({ type: 'state', species: 'cat', name: 'Miso', level: 2, xp: 30, xp_next: 100 });
   await flush();
