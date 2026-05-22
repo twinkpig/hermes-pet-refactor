@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import importlib
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -16,6 +17,7 @@ from hermes_pet.memory import (
     load_memory,
     memory_path,
     rotate_memory_day,
+    snapshot_memory,
     update_memory_for_event,
 )
 
@@ -315,6 +317,40 @@ def test_update_memory_for_semantic_task_events_tracks_focus_and_need(tmp_path: 
     )
     assert finished["semantic_task"]["status"] == "completed"
     assert finished["semantic_task"]["active"] is False
+
+
+def test_snapshot_clears_stale_active_semantic_after_idle(tmp_path: Path) -> None:
+    path = memory_path(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "today": {
+                    "date": "2026-05-18",
+                    "last_idle_at": "2026-05-18T10:01:00+08:00",
+                },
+                "semantic_task": {
+                    "title": "Approval needed",
+                    "status": "active",
+                    "active": True,
+                    "needs_user": True,
+                    "next_action": "Awaiting approval",
+                    "started_at": "2026-05-18T10:00:00+08:00",
+                    "updated_at": "2026-05-18T10:00:00+08:00",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    stale = snapshot_memory(base_dir=tmp_path, now=_cst(2026, 5, 18, 10, 2))
+
+    assert stale["semantic_task"]["status"] == "completed"
+    assert stale["semantic_task"]["active"] is False
+    assert stale["semantic_task"]["needs_user"] is False
+    assert stale["semantic_task"]["next_action"] == ""
+    persisted = json.loads(path.read_text(encoding="utf-8"))
+    assert persisted["semantic_task"]["status"] == "completed"
 
 
 def test_derive_narrative_adds_thread_day_risk_and_next_lines(tmp_path: Path) -> None:

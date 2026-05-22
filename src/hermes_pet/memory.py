@@ -271,6 +271,7 @@ def load_memory(base_dir: str | Path | None = None, now: datetime | None = None)
     except Exception:
         return default_memory(now)
     memory = merge_memory(raw, now)
+    _clear_stale_semantic_task_after_idle(memory, now)
     memory["expression"] = derive_expression(memory)
     memory["phase"] = derive_phase(memory, now)
     memory["insight"] = derive_insight(memory)
@@ -281,6 +282,7 @@ def load_memory(base_dir: str | Path | None = None, now: datetime | None = None)
 
 def save_memory(memory: dict[str, Any], base_dir: str | Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     merged = merge_memory(memory, now)
+    _clear_stale_semantic_task_after_idle(merged, now)
     merged["expression"] = derive_expression(merged)
     merged["phase"] = derive_phase(merged, now)
     merged["insight"] = derive_insight(merged)
@@ -305,6 +307,7 @@ def rotate_memory_day(memory: dict[str, Any], now: datetime | None = None) -> di
                 merged["recent_days"].append(archived)
             merged["recent_days"] = merged["recent_days"][-7:]
         merged["today"] = {**default_memory(now)["today"], "date": today}
+    _clear_stale_semantic_task_after_idle(merged, now)
     merged["expression"] = derive_expression(merged)
     merged["phase"] = derive_phase(merged, now)
     merged["insight"] = derive_insight(merged)
@@ -323,6 +326,38 @@ def _parse_iso(value: Any) -> datetime | None:
         return datetime.fromisoformat(text)
     except Exception:
         return None
+
+
+def _clear_stale_semantic_task_after_idle(memory: dict[str, Any], now: datetime | None = None) -> bool:
+    task = memory.get("semantic_task")
+    today = memory.get("today")
+    if not isinstance(task, dict) or not isinstance(today, dict):
+        return False
+
+    status = str(task.get("status") or "").strip().lower()
+    if status not in {"active", "blocked"} and not bool(task.get("active")):
+        return False
+
+    task_updated = _parse_iso(task.get("updated_at") or task.get("started_at"))
+    last_idle = _parse_iso(today.get("last_idle_at"))
+    if task_updated is None or last_idle is None or last_idle < task_updated:
+        return False
+
+    task["status"] = "completed"
+    task["active"] = False
+    task["needs_user"] = False
+    task["blocker_type"] = ""
+    task["blocker_detail"] = ""
+    task["next_action"] = ""
+    task["completed_at"] = task.get("completed_at") or today.get("last_idle_at") or iso_now(now)
+    task["updated_at"] = iso_now(now)
+
+    narrative = {**default_memory(now)["narrative"], **dict(memory.get("narrative") or {})}
+    narrative["need_line"] = ""
+    narrative["next_line"] = ""
+    narrative["updated_at"] = iso_now(now)
+    memory["narrative"] = narrative
+    return True
 
 
 def _minutes_between(start_value: Any, end_value: Any) -> float:
