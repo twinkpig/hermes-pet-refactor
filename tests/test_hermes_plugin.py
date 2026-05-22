@@ -101,6 +101,35 @@ def test_packaged_hermes_plugin_maps_approval_outcomes(tmp_path: Path) -> None:
     assert sent[3]["outcome_summary"] == "Approval timed out"
 
 
+def test_packaged_hermes_plugin_marks_turn_complete_after_llm(tmp_path: Path) -> None:
+    home = tmp_path / "hermes"
+    cli._cmd_hermes_plugin_install(_args(home))
+    plugin_path = home / "plugins" / "hermes-pet" / "__init__.py"
+
+    spec = importlib.util.spec_from_file_location("hermes_pet_plugin_test_post_llm", plugin_path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    sent = []
+    module._send_ws = lambda event: sent.append(event) or True
+
+    module._on_post_llm_call(
+        session_id="session-1",
+        user_message="Run the tests",
+        assistant_response="Tests passed.",
+    )
+
+    assert sent == [{
+        "type": "task_completed",
+        "task_status": "completed",
+        "task_title": "Run the tests",
+        "outcome_summary": "Tests passed.",
+        "session_id": "session-1",
+        "source": "hermes-pet-plugin",
+    }]
+
+
 def test_packaged_hermes_plugin_defaults_to_localhost_outside_wsl(tmp_path: Path, monkeypatch) -> None:
     home = tmp_path / "hermes"
     cli._cmd_hermes_plugin_install(_args(home))

@@ -1,10 +1,11 @@
 name: hermes-pet
-version: 1.1.0
+version: 1.1.1
 description: "Hermes Pets desktop overlay bridge for session and approval lifecycle events."
 hooks:
   - on_session_start
   - on_session_end
   - on_session_finalize
   - pre_llm_call
+  - post_llm_call
   - pre_approval_request
   - post_approval_response

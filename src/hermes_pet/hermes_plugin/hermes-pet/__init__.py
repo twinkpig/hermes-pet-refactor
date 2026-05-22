@@ -109,6 +109,22 @@ def _on_pre_llm_call(session_id: str = "", user_message: str = "", **kwargs: Any
     _send_ws({"type": "waiting", "text": _clean_text(user_message, 40)})
 
 
+def _on_post_llm_call(
+    session_id: str = "",
+    user_message: str = "",
+    assistant_response: str = "",
+    **kwargs: Any,
+) -> None:
+    _send_ws({
+        "type": "task_completed",
+        "task_status": "completed",
+        "task_title": _clean_text(user_message, 80) or "Hermes turn complete",
+        "outcome_summary": _clean_text(assistant_response, 220) or "Hermes turn complete",
+        "session_id": _clean_text(session_id, 120),
+        "source": "hermes-pet-plugin",
+    })
+
+
 def _on_pre_approval_request(
     command: str = "",
     description: str = "",
@@ -185,6 +201,7 @@ def _on_session_finalize(session_id: str = "", **kwargs: Any) -> None:
 
 def register(ctx: Any) -> None:
     ctx.register_hook("pre_llm_call", _on_pre_llm_call)
+    ctx.register_hook("post_llm_call", _on_post_llm_call)
     ctx.register_hook("pre_approval_request", _on_pre_approval_request)
     ctx.register_hook("post_approval_response", _on_post_approval_response)
     ctx.register_hook("on_session_start", _on_session_start)
