@@ -16,14 +16,16 @@ let mousePassthrough = null;
 let mousePassthroughTimer = null;
 let trayVisible = false;
 let thinkingStageTimers = [];
+let topmostReassertTimer = null;
 
 const IS_MAC = process.platform === 'darwin';
 const MAC_STANDARD_WINDOW = IS_MAC && process.env.HERMES_PET_MAC_STANDARD_WINDOW === '1';
 const MIN_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 const CONNECTION_LOG_INTERVAL_MS = 30000;
-const DEFAULT_ALWAYS_ON_TOP_LEVEL = IS_MAC ? 'floating' : 'screen-saver';
+const DEFAULT_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || DEFAULT_ALWAYS_ON_TOP_LEVEL;
+const TOPMOST_REASSERT_INTERVAL_MS = 10000;
 const WINDOW_SIZE = { width: 280, height: 340 };
 const MAC_WINDOW_SIZE = { width: 280, height: 1020 };
 const PET_TITLE = `Hermes Pets Overlay [${process.pid}]`;
@@ -147,17 +149,27 @@ function startMousePassthroughLoop() {
   updateMousePassthrough();
 }
 
-function reassertOverlayOnTop(reason) {
+function reassertOverlayOnTop(reason, options = {}) {
   if (!win) return;
   try {
+    if (IS_MAC && !MAC_STANDARD_WINDOW) {
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    }
     if (!MAC_STANDARD_WINDOW || process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL) {
       win.setAlwaysOnTop(true, ALWAYS_ON_TOP_LEVEL);
       win.moveTop();
     }
-    console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
+    if (!options.quiet) console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
   } catch (e) {
     console.warn(`[pet-overlay] failed to reassert always-on-top after ${reason}: ${e.message}`);
   }
+}
+
+function startTopmostReassertLoop() {
+  if (!IS_MAC || MAC_STANDARD_WINDOW) return;
+  if (topmostReassertTimer) clearInterval(topmostReassertTimer);
+  topmostReassertTimer = setInterval(() => reassertOverlayOnTop('topmost-watchdog', { quiet: true }), TOPMOST_REASSERT_INTERVAL_MS);
+  topmostReassertTimer.unref?.();
 }
 
 function makeWindowVisible(reason) {
@@ -374,6 +386,7 @@ function createWindow() {
     makeWindowVisible('ready-to-show');
     if (clickThrough) win.setIgnoreMouseEvents(true, { forward: true });
     else if (IS_MAC && !standardWindow) startMousePassthroughLoop();
+    startTopmostReassertLoop();
   });
   win.webContents.once('did-finish-load', () => setTimeout(() => makeWindowVisible('did-finish-load'), 250));
 
@@ -390,7 +403,9 @@ function createWindow() {
   win.on('closed', () => {
     dragState = null;
     if (mousePassthroughTimer) clearInterval(mousePassthroughTimer);
+    if (topmostReassertTimer) clearInterval(topmostReassertTimer);
     mousePassthroughTimer = null;
+    topmostReassertTimer = null;
     mousePassthrough = null;
     trayVisible = false;
     win = null;

@@ -86,6 +86,19 @@ def test_macos_overlay_defaults_to_transparent_window() -> None:
     assert "spriteEl.classList.add('sprite-asset-loaded')" in renderer
 
 
+def test_macos_overlay_periodically_reasserts_topmost_level() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    main = (repo_root / "src/hermes_pet/overlay/src/main.js").read_text(encoding="utf-8")
+
+    assert "const DEFAULT_ALWAYS_ON_TOP_LEVEL = 'screen-saver';" in main
+    assert "const TOPMOST_REASSERT_INTERVAL_MS = 10000;" in main
+    assert "let topmostReassertTimer = null;" in main
+    assert "function startTopmostReassertLoop()" in main
+    assert "setInterval(() => reassertOverlayOnTop('topmost-watchdog', { quiet: true })" in main
+    assert "startTopmostReassertLoop();" in main
+    assert "if (topmostReassertTimer) clearInterval(topmostReassertTimer);" in main
+
+
 def test_overlay_entrypoints_share_renderer_ipc_contract() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     overlay_dir = repo_root / "src/hermes_pet/overlay/src"
