@@ -48,6 +48,18 @@ def test_checkout_runtime_windows_overlay_runs_a_direct_ws_server() -> None:
     assert "-WindowStyle Hidden" in launcher
 
 
+def test_windows_overlay_periodically_reasserts_topmost_level() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    main = (repo_root / "src/hermes_pet/overlay/src/main.windows.js").read_text(encoding="utf-8")
+
+    assert "const TOPMOST_REASSERT_INTERVAL_MS = 10000;" in main
+    assert "let topmostReassertTimer = null;" in main
+    assert "function startTopmostReassertLoop()" in main
+    assert "setInterval(() => reassertOverlayOnTop('topmost-watchdog', { quiet: true })" in main
+    assert "startTopmostReassertLoop();" in main
+    assert "if (topmostReassertTimer) clearInterval(topmostReassertTimer);" in main
+
+
 def test_checkout_runtime_bundles_celestia_sprite_frames() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     overlay_dir = repo_root / "src/hermes_pet/overlay"

@@ -19,8 +19,10 @@ let mousePassthrough = null;
 let mousePassthroughTimer = null;
 let trayVisible = false;
 let thinkingStageTimers = [];
+let topmostReassertTimer = null;
 
 const ALWAYS_ON_TOP_LEVEL = process.env.HERMES_PET_ALWAYS_ON_TOP_LEVEL || 'screen-saver';
+const TOPMOST_REASSERT_INTERVAL_MS = 10000;
 const WINDOW_SIZE = { width: 236, height: 688 };
 const DEFAULT_SPRITE_RECT = { left: 34, top: 124, width: 148, height: 148 };
 const PET_SPECIES = process.env.HERMES_PET_SPECIES || 'cat';
@@ -244,6 +246,7 @@ function createWindow() {
   win.once('ready-to-show', () => {
     reassertOverlayOnTop('ready-to-show');
     startMousePassthroughLoop();
+    startTopmostReassertLoop();
     win.showInactive();
     verifyEvent('ready-to-show', { bounds: win.getBounds() });
   });
@@ -262,21 +265,29 @@ function createWindow() {
   win.on('closed', () => {
     dragState = null;
     if (mousePassthroughTimer) clearInterval(mousePassthroughTimer);
+    if (topmostReassertTimer) clearInterval(topmostReassertTimer);
     mousePassthroughTimer = null;
+    topmostReassertTimer = null;
     mousePassthrough = null;
     win = null;
   });
 }
 
-function reassertOverlayOnTop(reason) {
+function reassertOverlayOnTop(reason, options = {}) {
   if (!win) return;
   try {
     win.setAlwaysOnTop(true, ALWAYS_ON_TOP_LEVEL);
     win.moveTop();
-    console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
+    if (!options.quiet) console.log(`[pet-overlay] reasserted always-on-top (${ALWAYS_ON_TOP_LEVEL}) after ${reason}`);
   } catch (e) {
     console.warn(`[pet-overlay] failed to reassert always-on-top after ${reason}: ${e.message}`);
   }
+}
+
+function startTopmostReassertLoop() {
+  if (topmostReassertTimer) clearInterval(topmostReassertTimer);
+  topmostReassertTimer = setInterval(() => reassertOverlayOnTop('topmost-watchdog', { quiet: true }), TOPMOST_REASSERT_INTERVAL_MS);
+  topmostReassertTimer.unref?.();
 }
 
 function persistWindowPosition() {
